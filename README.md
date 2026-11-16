@@ -45,6 +45,7 @@ docker compose up -d --build --wait
 | Serviço | Endereço |
 |---|---|
 | API | http://127.0.0.1:8080 |
+| PostgreSQL (auditoria) | 127.0.0.1:5432, banco `servicedesk` |
 | Mailpit (caixa de entrada) | http://127.0.0.1:8025 |
 | RabbitMQ (painel) | http://127.0.0.1:15672 (usuário e senha do `.env`) |
 
@@ -92,6 +93,8 @@ ausente, em branco ou for um `${VARIAVEL}` sem valor, e a mensagem cita o nome, 
 | `EMAIL_MODE` | `smtp` (Mailpit, padrão) ou `resend` (HTTPS) |
 | `SMTP_HOST`, `SMTP_PORT` | Mailpit |
 | `RESEND_API_KEY` | Só com `EMAIL_MODE=resend` |
+| `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL local (auditoria). A senha não tem padrão: a aplicação não sobe sem ela |
+| `DB_URL` | Padrão `jdbc:postgresql://localhost:5432/servicedesk`. Na nuvem é obrigatória e exige `sslmode=require` |
 | `RABBITMQ_URL` | `amqp://usuario:senha@host:5672` (contém segredo) |
 | `SERVICEDESK_CORS_ORIGEM` | Origem do portal. Sem valor, nenhum cabeçalho CORS é devolvido |
 
@@ -113,10 +116,21 @@ EVAL_REAL=true ./mvnw test -Dtest=EvalModeloRealManualTest
 Os 20 casos estão em `src/test/resources/eval/casos.json` (4 adversariais). Rode a cada mudança de prompt,
 modelo ou parâmetro e compare com a nota anterior. A nota mínima inicial (0,80) deve ser revista com o uso real.
 
+## Auditoria e publicação na nuvem
+
+Cada execução e o ciclo de vida da notificação ficam no PostgreSQL (tabelas `execucao` e `notificacao`, migração Flyway),
+sem nome, descrição, resumo nem corpo de e-mail. Os estados só avançam e nenhum deles afirma entrega: `ACEITO_PELO_PROVEDOR`
+quer dizer que a API de e-mail aceitou a solicitação. A falha ao gravar a auditoria não derruba o atendimento.
+
+A publicação (Vercel, Render, Neon, CloudAMQP e Resend, todos em planos gratuitos), as limitações desses planos e o
+procedimento de redeploy e de desativação estão em [`docs/deploy.md`](docs/deploy.md). O que já foi verificado e o que
+falta está em [`docs/deploy-verification.md`](docs/deploy-verification.md). O portal e o proxy ficam em `portal/`
+(`cd portal && node --test`).
+
 ## Limitações conhecidas
 
 - Deduplicação e limite de requisições em memória: só valem com uma instância.
-- Sem banco, outbox ou reprocessamento automático da DLQ. A DLQ é inspecionada e tratada à mão no painel.
+- Sem outbox: banco e broker não são atômicos, e a auditoria pode ter lacunas. Sem reprocessamento automático da DLQ. A DLQ é inspecionada e tratada à mão no painel.
 - A DLQ recebe a mensagem rejeitada pelo broker; o motivo da última falha fica no log da aplicação, com o
   `eventoId`, e não dentro da mensagem.
 - Resend: a `Idempotency-Key` vale por 24 horas, e o Mailpit local não deduplica.

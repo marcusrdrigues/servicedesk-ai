@@ -1,0 +1,4 @@
+# Traz de volta a autoconfiguração do banco, para os testes com PostgreSQL real (Testcontainers).
+spring:
+  autoconfigure:
+    exclude: ""

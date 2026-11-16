@@ -21,9 +21,16 @@ final class ContainersCompartilhados {
             .withExposedPorts(1025, 8025)
             .waitingFor(Wait.forHttp("/livez").forPort(8025));
 
+    static final org.testcontainers.postgresql.PostgreSQLContainer POSTGRES =
+            new org.testcontainers.postgresql.PostgreSQLContainer("postgres:17-alpine")
+                    .withDatabaseName("servicedesk")
+                    .withUsername("servicedesk")
+                    .withPassword("senhaDeTeste123");
+
     static {
         RABBIT.start();
         MAILPIT.start();
+        POSTGRES.start();
     }
 
     private ContainersCompartilhados() {}

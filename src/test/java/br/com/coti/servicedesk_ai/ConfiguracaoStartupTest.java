@@ -97,6 +97,81 @@ class ConfiguracaoStartupTest {
                 .satisfies(e -> assertThat(mensagensDe(e)).contains("servicedesk.ia.gemini.modelo"));
     }
 
+    // --- perfil cloud e auditoria ---
+
+    private static ConfigurableApplicationContext subirNaNuvem(String... propriedades) {
+        return new SpringApplicationBuilder(ServicedeskAiApplication.class)
+                .web(WebApplicationType.NONE)
+                .profiles("test", "cloud")
+                .run(argumentos(propriedades));
+    }
+
+    private static final String JDBC_COM_TLS = "spring.datasource.url=jdbc:postgresql://host.exemplo/servicedesk?sslmode=require";
+    private static final String BROKER_COM_TLS = "spring.rabbitmq.addresses=amqps://usuario:senha@host.exemplo/vhost";
+    private static final String CHAVE_RESEND = "servicedesk.email.resend.api-key=" + SEGREDO_DE_TESTE;
+
+    @Test
+    void semSenhaDoBancoNaoSobeECitaDbPassword() {
+        assertThatThrownBy(() -> subir("spring.datasource.password=${DB_PASSWORD_NAO_DEFINIDA}"))
+                .satisfies(e -> assertThat(mensagensDe(e)).contains("DB_PASSWORD"));
+    }
+
+    @Test
+    void nuvemSemDbUrlNaoSobeECitaDbUrl() {
+        assertThatThrownBy(() -> subirNaNuvem(BROKER_COM_TLS, CHAVE_RESEND))
+                .satisfies(e -> assertThat(mensagensDe(e)).contains("DB_URL").doesNotContain(SEGREDO_DE_TESTE));
+    }
+
+    @Test
+    void nuvemComJdbcSemTlsNaoSobe() {
+        assertThatThrownBy(() -> subirNaNuvem(
+                        "spring.datasource.url=jdbc:postgresql://host.exemplo/servicedesk", BROKER_COM_TLS, CHAVE_RESEND))
+                .satisfies(e -> assertThat(mensagensDe(e)).contains("sslmode=require"));
+        assertThatThrownBy(() -> subirNaNuvem(
+                        "spring.datasource.url=jdbc:postgresql://host.exemplo/servicedesk?sslmode=disable",
+                        BROKER_COM_TLS, CHAVE_RESEND))
+                .satisfies(e -> assertThat(mensagensDe(e)).contains("sslmode=require"));
+    }
+
+    @Test
+    void nuvemComUrlPostgresqlPuraNaoServeComoJdbc() {
+        assertThatThrownBy(() -> subirNaNuvem(
+                        "spring.datasource.url=postgresql://usuario:senha@host.exemplo/servicedesk?sslmode=require",
+                        BROKER_COM_TLS, CHAVE_RESEND))
+                .satisfies(e -> assertThat(mensagensDe(e)).contains("jdbc:postgresql://").doesNotContain("senha@"));
+    }
+
+    @Test
+    void nuvemComBrokerSemTlsNaoSobe() {
+        assertThatThrownBy(() -> subirNaNuvem(
+                        JDBC_COM_TLS, "spring.rabbitmq.addresses=amqp://usuario:senhaSecreta@host.exemplo/vhost", CHAVE_RESEND))
+                .satisfies(e -> assertThat(mensagensDe(e))
+                        .contains("RABBITMQ_URL")
+                        .contains("amqps://")
+                        .doesNotContain("senhaSecreta"));
+    }
+
+    @Test
+    void nuvemComValoresValidosSobeComResendPoolPequenoEPortaDoAmbiente() {
+        try (var contexto = subirNaNuvem(JDBC_COM_TLS, BROKER_COM_TLS, CHAVE_RESEND, "PORT=9123")) {
+            var env = contexto.getEnvironment();
+            assertThat(contexto.getBeansOfType(br.com.coti.servicedesk_ai.infraestrutura.email.ResendEmailSender.class))
+                    .hasSize(1);
+            assertThat(contexto.getBeansOfType(br.com.coti.servicedesk_ai.infraestrutura.email.SmtpEmailSender.class))
+                    .isEmpty();
+            assertThat(env.getProperty("server.port")).isEqualTo("9123");
+            assertThat(env.getProperty("spring.datasource.hikari.maximum-pool-size")).isEqualTo("3");
+            assertThat(env.getProperty("spring.datasource.hikari.minimum-idle")).isEqualTo("0");
+            assertThat(env.getProperty("servicedesk.ia.orcamento-total")).isEqualTo("25s");
+        }
+    }
+
+    @Test
+    void nuvemSemChaveDoResendNaoSobe() {
+        assertThatThrownBy(() -> subirNaNuvem(JDBC_COM_TLS, BROKER_COM_TLS))
+                .satisfies(e -> assertThat(mensagensDe(e)).contains("RESEND_API_KEY"));
+    }
+
     @Test
     void chaveDoResendComPlaceholderSemValorNaoSobe() {
         assertThatThrownBy(() -> subir(

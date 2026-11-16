@@ -82,7 +82,8 @@ public final class ChatClientAnalisadorAdapter implements AnalisadorChamadoPort 
                     saida.prioridade(),
                     saida.resumo(),
                     saida.orientacao(),
-                    Boolean.TRUE.equals(saida.enviarEmail())));
+                    Boolean.TRUE.equals(saida.enviarEmail()),
+                    provedor));
             registrar("ok", inicio, resposta.response());
             return analise;
         } catch (RuntimeException erro) {

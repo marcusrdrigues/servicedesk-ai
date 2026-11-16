@@ -10,3 +10,8 @@
 target
 openspec
 HELP.md
+portal
+docs
+render.yaml
+compose.yaml
+README.md

@@ -1,0 +1,15 @@
+# Perfil de nuvem (Render Free). Ativado por SPRING_PROFILES_ACTIVE=cloud.
+# Tudo vem de variável de ambiente; ValidacaoAmbiente recusa subir sem TLS no banco e no broker.
+server:
+  port: ${PORT:8080}            # o Render define PORT; escuta em todas as interfaces (padrão do Spring Boot)
+
+spring:
+  datasource:
+    url: ${DB_URL}              # jdbc:postgresql://HOST/BANCO?sslmode=require (nunca postgresql:// puro)
+
+servicedesk:
+  email:
+    modo: resend                # SMTP de saída é bloqueado no Render Free; só HTTPS
+  ia:
+    timeout: ${IA_TIMEOUT:12s}                  # por chamada ao modelo
+    orcamento-total: ${IA_ORCAMENTO_TOTAL:25s}  # análise inteira, com fallback; o proxy da Vercel espera mais que isto

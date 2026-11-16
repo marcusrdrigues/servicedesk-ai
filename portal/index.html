@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ServiceDesk AI</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>ServiceDesk AI</h1>
+    <p class="aviso" role="note">
+      Demonstração de laboratório. Use apenas <strong>dados fictícios</strong>: o texto é analisado por um modelo de
+      linguagem de terceiros.
+    </p>
+
+    <form id="formulario" novalidate>
+      <label for="nome">Nome</label>
+      <input id="nome" name="nome" type="text" maxlength="100" required autocomplete="off">
+
+      <label for="descricao">Descrição do chamado <small>(20 a 4000 caracteres)</small></label>
+      <textarea id="descricao" name="descricao" rows="6" minlength="20" maxlength="4000" required></textarea>
+
+      <label class="opcao">
+        <input id="autorizaEmail" name="autorizaEmail" type="checkbox">
+        Autorizo o envio de um e-mail de notificação à equipe de suporte, se a análise recomendar.
+      </label>
+
+      <label for="codigoAcesso">Código de acesso da demonstração</label>
+      <input id="codigoAcesso" name="codigoAcesso" type="password" required autocomplete="off">
+
+      <button id="enviar" type="submit">Analisar chamado</button>
+    </form>
+
+    <section id="resultado" hidden aria-live="polite"></section>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

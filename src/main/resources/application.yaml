@@ -9,6 +9,15 @@ spring:
     name: servicedesk-ai
   config:
     import: "optional:file:.env[.properties]"
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/servicedesk}   # local; na nuvem DB_URL é obrigatória e exige TLS
+    username: ${DB_USERNAME:servicedesk}
+    password: ${DB_PASSWORD}                                      # sem padrão: a aplicação recusa subir sem ela
+    hikari:
+      maximum-pool-size: 3     # plano gratuito: poucas conexões
+      minimum-idle: 0          # o banco suspende por inatividade; não manter conexão ociosa
+      connection-timeout: 30000
+      idle-timeout: 60000
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1025}

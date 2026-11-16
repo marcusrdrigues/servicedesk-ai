@@ -2,6 +2,7 @@ package br.com.coti.servicedesk_ai.infraestrutura.config;
 
 import br.com.coti.servicedesk_ai.aplicacao.AnalisadorChamadoPort;
 import br.com.coti.servicedesk_ai.aplicacao.AnalisarChamadoService;
+import br.com.coti.servicedesk_ai.aplicacao.AuditoriaPort;
 import br.com.coti.servicedesk_ai.aplicacao.EmailService;
 import br.com.coti.servicedesk_ai.aplicacao.EnviadorEmailPort;
 import br.com.coti.servicedesk_ai.aplicacao.MontadorEmail;
@@ -37,9 +38,11 @@ class AplicacaoConfig {
             AnalisadorChamadoPort analisador,
             PublicadorNotificacaoPort publicador,
             MontadorEmail montadorEmail,
+            AuditoriaPort auditoria,
             IaProperties ia,
             Clock relogio) {
-        return new AnalisarChamadoService(analisador, publicador, montadorEmail, ia.orcamentoTotal(), relogio);
+        return new AnalisarChamadoService(
+                analisador, publicador, montadorEmail, auditoria, ia.orcamentoTotal(), relogio);
     }
 
     @Bean
@@ -48,8 +51,9 @@ class AplicacaoConfig {
     }
 
     @Bean
-    EmailService emailService(EnviadorEmailPort enviador, RegistroNotificacoesProcessadas registro) {
-        return new EmailService(enviador, registro);
+    EmailService emailService(
+            EnviadorEmailPort enviador, RegistroNotificacoesProcessadas registro, AuditoriaPort auditoria) {
+        return new EmailService(enviador, registro, auditoria);
     }
 
     @Bean

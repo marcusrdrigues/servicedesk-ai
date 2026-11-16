@@ -59,7 +59,7 @@ public final class NotificacaoPublisher implements PublicadorNotificacaoPort {
             LOG.info("eventoId={} resultado=publicado-e-confirmado", id);
         } catch (TimeoutException e) {
             // Resultado incerto: o broker pode ter aceitado a mensagem e a confirmação não chegou a tempo.
-            throw new FalhaPublicacaoException(
+            throw FalhaPublicacaoException.incerta(
                     "confirmação do broker não chegou no prazo; o resultado é incerto", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -1,0 +1,50 @@
+# Blueprint do Render: um único Web Service gratuito (API e consumidor RabbitMQ na mesma aplicação).
+# Segredos com "sync: false": o Render pede o valor no painel na criação; nenhum valor fica neste arquivo.
+# Sintaxe conferida na documentação do Render (blueprint-spec). Valide com: render blueprints validate
+services:
+  - type: web
+    name: servicedesk-ai
+    runtime: docker
+    plan: free                       # plano gratuito; não migrar para pago sem decisão explícita
+    region: oregon                   # use a mesma região (ou a mais próxima) do Neon e do CloudAMQP
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: checksPass    # só publica se a CI do branch passar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: cloud
+
+      # Provedores de modelo (a OpenAI não é gratuita; defina o limite de gasto na conta do provedor)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_CHAT_MODEL       # id com versão, nunca alias
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_CHAT_MODEL
+        sync: false
+
+      # Segredo da API: o MESMO valor vai em BACKEND_API_KEY no projeto da Vercel
+      - key: SERVICEDESK_API_KEY
+        sync: false
+
+      # PostgreSQL no Neon: JDBC com TLS (jdbc:postgresql://HOST/servicedesk?sslmode=require)
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      # RabbitMQ no CloudAMQP: amqps://USUARIO:SENHA@HOST/VHOST
+      - key: RABBITMQ_URL
+        sync: false
+
+      # E-mail pelo Resend (HTTPS). Sem domínio verificado: EMAIL_FROM=onboarding@resend.dev e EMAIL_TO igual
+      # ao e-mail da conta do Resend (regra a confirmar no painel do Resend).
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_TO
+        sync: false

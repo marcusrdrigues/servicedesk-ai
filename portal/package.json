@@ -1,0 +1,12 @@
+{
+  "name": "servicedesk-portal",
+  "private": true,
+  "type": "module",
+  "description": "Portal e proxy da triagem do ServiceDesk AI (Vercel). Sem dependências de runtime.",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

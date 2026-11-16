@@ -20,7 +20,7 @@ class SegredosNoRepositorioTest {
             Pattern.compile("sk-[A-Za-z0-9_-]{20,}"), // OpenAI
             Pattern.compile("AIza[0-9A-Za-z_-]{30,}"), // Google
             Pattern.compile("re_[A-Za-z0-9]{20,}"), // Resend
-            Pattern.compile("amqps?://[^:\\s/]+:(?!troque|<|\\$\\{|%|senhaDeTeste|teste@|SenhaLocal|senha@)[^@\\s]{4,}@"));
+            Pattern.compile("amqps?://[^:\\s/]+:(?!troque|<|\\$\\{|%|senhaDeTeste|senhaSecreta|teste@|SenhaLocal|senha@|SENHA@)[^@\\s]{4,}@"));
 
     private static boolean versionavel(Path arquivo) {
         for (Path parte : Path.of(".").relativize(arquivo)) {
@@ -74,7 +74,7 @@ class SegredosNoRepositorioTest {
         // chaves e senhas precisam de valor de marcação, nunca um valor que pareça real
         assertThat(atribuicoes.stream().filter(l -> l.matches("^(OPENAI|GEMINI|RESEND)_API_KEY=.*")))
                 .allMatch(l -> l.contains("troque"));
-        assertThat(atribuicoes.stream().filter(l -> l.matches("^(SERVICEDESK_API_KEY|RABBITMQ_PASSWORD)=.*")))
+        assertThat(atribuicoes.stream().filter(l -> l.matches("^(SERVICEDESK_API_KEY|RABBITMQ_PASSWORD|DB_PASSWORD)=.*")))
                 .allMatch(l -> l.contains("troque"));
     }
 }

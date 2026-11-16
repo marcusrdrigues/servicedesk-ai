@@ -2,6 +2,14 @@
 spring:
   config:
     import: ""
+  # Sem banco nos testes que não são de auditoria: a autoconfiguração é excluída e a auditoria fica desligada.
+  # Os testes com PostgreSQL real ativam o perfil auditoria-it, que traz a autoconfiguração de volta.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration
+  datasource:
+    password: senha-de-teste
   rabbitmq:
     addresses: amqp://teste:teste@localhost:5672
     listener:
