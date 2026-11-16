@@ -1,0 +1,31 @@
+# Perfil de teste: todos os valores são fictícios. Nenhum teste fala com provedor real nem lê o .env do desenvolvedor.
+spring:
+  config:
+    import: ""
+  rabbitmq:
+    addresses: amqp://teste:teste@localhost:5672
+    listener:
+      simple:
+        auto-startup: false
+
+management:
+  health:
+    rabbit:
+      enabled: false
+
+servicedesk:
+  api-key: chave-de-teste-0123456789
+  cors-origem: https://portal.exemplo.local
+  limite-requisicoes-por-minuto: 1000
+  notificacao:
+    destinatario: suporte@exemplo.local
+    remetente: servicedesk@exemplo.local
+  email:
+    modo: smtp
+  ia:
+    openai:
+      api-key: chave-openai-de-teste
+      modelo: modelo-openai-de-teste
+    gemini:
+      api-key: chave-gemini-de-teste
+      modelo: modelo-gemini-de-teste

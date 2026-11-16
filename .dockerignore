@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.git
+.github
+.vscode
+.idea
+.claude
+.agents
+target
+openspec
+HELP.md

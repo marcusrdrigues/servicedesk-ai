@@ -1,0 +1,15 @@
+schema: spec-driven
+
+context: |
+  Projeto para a aula final de Arquiteto de IA Java da COTI.
+  Público: desenvolvedores seniores.
+  Java 21, Spring Boot e Spring AI.
+  OpenAI como provedor principal.
+  Gemini como fallback pelo endpoint compatível com OpenAI.
+  RabbitMQ para envio assíncrono de notificações.
+  Mailpit local e Resend por HTTPS na nuvem.
+  API e consumidor na mesma aplicação para simplificar o laboratório.
+  Portal na Vercel e backend Docker no Render.
+  Segredos somente em variáveis de ambiente.
+  Não afirmar entrega exatamente uma vez.
+  Não afirmar que a publicação na fila significa e-mail enviado.

@@ -1,0 +1,106 @@
+# Versões conferidas em 2026-11-16 (tarefa 1.3):
+# - Spring AI 2.0.2 (linha 2.0). OpenAiChatModel é montado com OpenAiChatOptions
+#   (baseUrl, apiKey, model, timeout, maxRetries); o retry do SDK fica em 0 e a aplicação
+#   faz o retry em um único ponto.
+# - Gemini compatível com OpenAI: base-url https://generativelanguage.googleapis.com/v1beta/openai
+#   (o SDK acrescenta /chat/completions). A documentação do Google descreve structured output.
+spring:
+  application:
+    name: servicedesk-ai
+  config:
+    import: "optional:file:.env[.properties]"
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    properties:
+      mail.smtp.connectiontimeout: 5000 # ms; sem timeout, uma conexão presa travaria o consumidor
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+  rabbitmq:
+    addresses: ${RABBITMQ_URL}           # amqp://usuario:senha@host:5672 ; contém segredo, só por variável
+    publisher-confirm-type: correlated   # confirmação do broker por mensagem
+    publisher-returns: true              # devolve a mensagem que não roteou
+    template:
+      mandatory: true                    # sem fila de destino, a mensagem volta
+    listener:
+      simple:
+        concurrency: 1                   # laboratório: uma execução
+        max-concurrency: 1
+        prefetch: 1
+        default-requeue-rejected: false  # falha definitiva vai para a DLQ, nunca volta ao início da fila
+        retry:
+          enabled: true
+          # Boot 4: max-attempts foi removido. max-retries conta as retentativas ALÉM da primeira
+          # (2 retentativas = 3 tentativas totais). Conferido por teste de integração com o broker.
+          max-retries: 2
+          initial-interval: 2s
+          multiplier: 2
+          max-interval: 10s
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-exception: false
+    include-binding-errors: never
+  forward-headers-strategy: framework  # atrás do proxy do Render, IP real para o limite de taxa
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    mail:
+      enabled: false
+
+servicedesk:
+  api-key: ${SERVICEDESK_API_KEY}
+  cors-origem: ${SERVICEDESK_CORS_ORIGEM:}
+  limite-requisicoes-por-minuto: ${SERVICEDESK_LIMITE_POR_MINUTO:30}
+  notificacao:
+    destinatario: ${EMAIL_TO}            # do servidor; o modelo não escolhe
+    remetente: ${EMAIL_FROM}
+    prefixo-assunto: "[ServiceDesk]"
+    exchange: servicedesk.events
+    routing-key: email.solicitado
+    fila: servicedesk.email
+    exchange-dlq: servicedesk.dlx
+    routing-key-dlq: email.falhou
+    fila-dlq: servicedesk.email.dlq
+    timeout-confirmacao: 5s
+  email:
+    modo: ${EMAIL_MODE:smtp}             # smtp = Mailpit local; resend = HTTPS na nuvem
+    resend:
+      base-url: https://api.resend.com
+      api-key: ${RESEND_API_KEY:}
+      timeout: 10s
+  ia:
+    timeout: ${IA_TIMEOUT:20s}                 # por chamada; evita requisição presa no provedor
+    orcamento-total: ${IA_ORCAMENTO_TOTAL:45s} # teto da análise inteira, com fallback
+    tentativas-extras-transitorias: 1          # 1 repetição só em 429/5xx/timeout
+    backoff-inicial: 500ms
+    max-tokens: ${IA_MAX_TOKENS:1000}          # teto de custo; modelos com raciocínio gastam parte disso
+    temperatura: ${IA_TEMPERATURA:0.0}         # classificação: o mais determinístico possível
+    tamanho-maximo-resumo: 500
+    tamanho-maximo-orientacao: 2000
+    openai:
+      base-url: https://api.openai.com/v1
+      api-key: ${OPENAI_API_KEY}
+      modelo: ${OPENAI_CHAT_MODEL}             # id com versão, nunca alias
+      schema-nativo: true
+    gemini:
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      api-key: ${GEMINI_API_KEY}
+      modelo: ${GEMINI_CHAT_MODEL}
+      schema-nativo: ${GEMINI_SCHEMA_NATIVO:true}
+
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"  # id da requisição em toda linha de log; nunca o conteúdo do chamado

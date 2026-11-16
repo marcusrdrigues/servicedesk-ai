@@ -1,0 +1,57 @@
+# Execução local do laboratório: RabbitMQ, Mailpit e a aplicação.
+# Portas publicadas só em 127.0.0.1. Dentro da rede do Compose, um container fala com o outro pelo nome do
+# serviço (rabbitmq, mailpit), nunca por localhost. Imagens com tag fixa: atualize de propósito.
+services:
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672" # painel de administração
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?defina RABBITMQ_USER no .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?defina RABBITMQ_PASSWORD no .env}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    ports:
+      - "127.0.0.1:1025:1025" # SMTP
+      - "127.0.0.1:8025:8025" # caixa de entrada web
+
+  app:
+    build: .
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      EMAIL_MODE: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      EMAIL_TO: ${EMAIL_TO:?defina EMAIL_TO no .env}
+      EMAIL_FROM: ${EMAIL_FROM:?defina EMAIL_FROM no .env}
+      SERVICEDESK_API_KEY: ${SERVICEDESK_API_KEY:?defina SERVICEDESK_API_KEY no .env}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?defina OPENAI_API_KEY no .env}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:?defina OPENAI_CHAT_MODEL no .env}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?defina GEMINI_API_KEY no .env}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:?defina GEMINI_CHAT_MODEL no .env}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  rabbitmq-data:
