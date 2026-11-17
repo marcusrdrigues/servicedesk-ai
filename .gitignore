@@ -115,3 +115,7 @@ $RECYCLE.BIN/
 .claude/settings.local.json
 .claude/worktrees/
 CLAUDE.local.md
+
+### Estado local dos CLIs de hospedagem ###
+.netlify/
+.vercel/

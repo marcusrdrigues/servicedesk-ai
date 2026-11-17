@@ -310,7 +310,7 @@ function arquivosPublicos(dir) {
 }
 
 test('HTML, CSS e JavaScript do navegador não contêm segredo nem variável de servidor', () => {
-  const publicos = arquivosPublicos(RAIZ).filter((f) => /\.(html|css|js)$/.test(f));
+  const publicos = arquivosPublicos(join(RAIZ, 'public')).filter((f) => /\.(html|css|js)$/.test(f));
   assert.ok(publicos.length >= 3, 'esperava index.html, style.css e app.js');
   for (const arquivo of publicos) {
     const texto = readFileSync(arquivo, 'utf8');
@@ -321,14 +321,14 @@ test('HTML, CSS e JavaScript do navegador não contêm segredo nem variável de 
 });
 
 test('o navegador chama só a rota relativa /api/triagem', () => {
-  const app = readFileSync(join(RAIZ, 'app.js'), 'utf8');
+  const app = readFileSync(join(RAIZ, 'public', 'app.js'), 'utf8');
   const urls = [...app.matchAll(/fetch\(\s*['"`]([^'"`]+)['"`]/g)].map((m) => m[1]);
   assert.deepEqual(urls, ['/api/triagem']);
   assert.ok(!/https?:\/\//.test(app), 'sem URL absoluta no JavaScript do navegador');
 });
 
 test('a página não afirma que o e-mail foi enviado ou entregue', () => {
-  const app = readFileSync(join(RAIZ, 'app.js'), 'utf8');
+  const app = readFileSync(join(RAIZ, 'public', 'app.js'), 'utf8');
   assert.match(app, /aceita pela fila/);
   assert.match(app, /não significa que o e-mail já foi enviado nem entregue/);
 });
@@ -338,4 +338,40 @@ test('vercel.json fixa a duração da função acima do timeout do proxy', () =>
   assert.equal(cfg.functions['api/triagem.mjs'].maxDuration, 40);
   const csp = cfg.headers[0].headers.find((h) => h.key === 'Content-Security-Policy').value;
   assert.ok(!csp.includes("'unsafe-inline'") && !csp.includes("'unsafe-eval'"));
+});
+
+// --- só public/ é servida como estática (Vercel e Netlify) ---
+
+test('somente a pasta public/ é a saída estática, e ela não contém código do servidor', () => {
+  const vercel = JSON.parse(readFileSync(join(RAIZ, 'vercel.json'), 'utf8'));
+  assert.equal(vercel.outputDirectory, 'public');
+
+  const netlify = readFileSync(join(RAIZ, 'netlify.toml'), 'utf8');
+  assert.match(netlify, /publish\s*=\s*"public"/);
+  assert.match(netlify, /directory\s*=\s*"netlify\/functions"/);
+
+  const nomes = readdirSync(join(RAIZ, 'public')).sort();
+  assert.deepEqual(nomes, ['app.js', 'index.html', 'style.css']);
+});
+
+test('a política de segurança da Netlify é a mesma da Vercel e sem unsafe-inline', () => {
+  const vercel = JSON.parse(readFileSync(join(RAIZ, 'vercel.json'), 'utf8'));
+  const cspVercel = vercel.headers[0].headers.find((h) => h.key === 'Content-Security-Policy').value;
+  const netlify = readFileSync(join(RAIZ, 'netlify.toml'), 'utf8');
+  const cspNetlify = netlify.match(/Content-Security-Policy\s*=\s*"([^"]+)"/)[1];
+  assert.equal(cspNetlify, cspVercel);
+  assert.ok(!cspNetlify.includes("'unsafe-inline'") && !cspNetlify.includes("'unsafe-eval'"));
+});
+
+test('a função da Netlify expõe /api/triagem e reaproveita o mesmo proxy', async () => {
+  process.env.BACKEND_URL = 'https://backend.exemplo.test';
+  process.env.BACKEND_API_KEY = 'chave-ficticia';
+  process.env.DEMO_ACCESS_CODE = 'codigo-ficticio';
+  const modulo = await import('../netlify/functions/triagem.mjs');
+  assert.equal(modulo.config.path, '/api/triagem');
+  assert.equal(typeof modulo.default, 'function');
+  const res = await modulo.default(new Request('https://portal.exemplo.test/api/triagem', { method: 'GET' }));
+  assert.equal(res.status, 405);
+  assert.equal(res.headers.get('allow'), 'POST');
+  assert.equal(res.headers.get('cache-control'), 'no-store');
 });

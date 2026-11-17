@@ -14,9 +14,23 @@ Data: 2026-11-16. Sem segredos neste arquivo.
 | GitHub (repositório e push) | **Pendente**: a pasta ainda não é um repositório |
 | Render (backend) | **Pendente**: depende do GitHub e dos segredos acima |
 | Vercel (portal e proxy) | **Bloqueado** pela Vercel (ver abaixo) |
+| Netlify (portal e proxy, alternativa à Vercel) | **Publicado** em `https://servicedesk-ai-portal.netlify.app`, plano Free, atrás do login da Netlify; **comportamento ao vivo não verificado** (ver abaixo) |
 | Validação ponta a ponta na nuvem | **Pendente** |
 
-**Nada foi publicado.** Não há URL de serviço no ar.
+**Só o portal está publicado, e só na Netlify.** O backend, o banco, o broker e o e-mail não estão no ar.
+
+### Netlify (verificado por API, não por navegação)
+
+| Verificação | Resultado |
+|---|---|
+| Conta e time | `marcusp181's team`, `account_type: Free` |
+| Deploy | `ready`, contexto `production`, 4 arquivos e 1 função |
+| Arquivos estáticos publicados | `/index.html`, `/app.js`, `/style.css`, `/netlify.toml` (nenhum código de servidor) |
+| Acesso por `curl` | **401** com redirecionamento para o login da Netlify, em `/` e em `/api/triagem` |
+
+Por causa da proteção de acesso do site, **não foi possível verificar ao vivo** que a página abre, os cabeçalhos de segurança, o
+405 a `GET /api/triagem` nem o 401 do código de acesso. Esses comportamentos estão cobertos só pelos testes locais do portal
+(28 de 28, incluindo o adaptador da Netlify). Nenhuma variável de ambiente foi cadastrada no site.
 
 ## Verificado localmente
 
@@ -82,7 +96,7 @@ SHA do commit do release. **A CI nunca rodou no GitHub e o `render.yaml` nunca f
 2. **Neon, CloudAMQP, Resend e Render:** sem integração, CLI nem sessão acessível. É preciso entrar em cada painel.
 3. **GitHub:** `git init`, primeiro commit e push (o `gh` está autenticado como `marcusrdrigues`). Antes, confira que `.env`
    não aparece em `git status`.
-4. **Segredos da Vercel** (`BACKEND_API_KEY`, `DEMO_ACCESS_CODE`, `BACKEND_URL`): devem ser cadastrados por você no painel.
+4. **Segredos do portal, na Vercel ou na Netlify** (`BACKEND_API_KEY`, `DEMO_ACCESS_CODE`, `BACKEND_URL`): devem ser cadastrados por você no painel.
    Passá-los por ferramenta registraria o valor na conversa.
 5. **TLS do CloudAMQP, RAM do Render e regra do `onboarding@resend.dev`:** não confirmados nas páginas oficiais consultadas.
 6. **Eval com modelo real** (tarefa da mudança anterior): nunca rodou.

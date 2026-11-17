@@ -107,6 +107,33 @@ node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
 7. **Vercel:** projeto com *Root Directory* `portal` (sem framework). Cadastre `BACKEND_URL`, `BACKEND_API_KEY` e `DEMO_ACCESS_CODE` e faça o deploy.
 8. Execute a validação ponta a ponta (abaixo) e registre os resultados em `deploy-verification.md`.
 
+## Alternativa: portal na Netlify
+
+Serve para **ver o portal** quando a Vercel não estiver disponível. É o mesmo código: a pasta `portal/public/` é a página e
+`portal/netlify/functions/triagem.mjs` expõe `POST /api/triagem` reaproveitando o mesmo proxy testado. Só `public/` é servida como
+estática: o código do servidor (`lib/`, `test/`, `netlify/`) não fica exposto.
+
+```bash
+cd portal
+npx netlify-cli@27.20.0 login     # abre o navegador; o login é feito por você
+npx netlify-cli@27.20.0 deploy --prod --no-build --dir public --functions netlify/functions --site-name servicedesk-ai-portal
+```
+
+**Estado atual (2026-11-16):** o site `servicedesk-ai-portal` existe e tem um deploy `ready` em
+`https://servicedesk-ai-portal.netlify.app`, no plano **Free** do time `marcusp181's team`, sem repositório conectado.
+Os arquivos estáticos publicados são `index.html`, `app.js`, `style.css` e `netlify.toml`.
+
+- O site está protegido pelo login da Netlify (quem não é do time recebe 401 e um redirecionamento). Essa proteção não foi alterada.
+- As variáveis `BACKEND_URL`, `BACKEND_API_KEY` e `DEMO_ACCESS_CODE` **não foram cadastradas**. Cadastre-as você mesmo no painel
+  (Site configuration, Environment variables): o valor não deve passar pela conversa. Sem elas a página abre, mas o formulário
+  devolve o erro genérico "O serviço não está configurado". Sem o backend publicado, devolve 502 ou 504.
+- O **limite de execução síncrona das funções da Netlify e o que o plano gratuito inclui para funções não foram confirmados** na
+  documentação consultada. O proxy espera até 35 s (como na Vercel); se a plataforma cortar a função antes, defina
+  `PROXY_TIMEOUT_MS` menor.
+- O CLI guarda o token de login em texto puro no arquivo de configuração do usuário. Para remover: `npx netlify-cli@27.20.0 logout`.
+- Para apagar o site: painel da Netlify (Site configuration, Danger zone) ou `npx netlify-cli@27.20.0 sites:delete 686fccd9-0bb4-4c43-9a01-f2fa387aacdb`.
+- O código de acesso continua sendo só uma proteção de laboratório.
+
 ## Validação depois de publicar
 
 Use dados fictícios e o destinatário autorizado. Antes, acorde o backend: abra `/actuator/health`.
